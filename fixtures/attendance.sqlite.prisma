@@ -1,0 +1,78 @@
+// Illustrative schema in the shape of a school attendance system that was
+// developed on SQLite and has not yet been validated on PostgreSQL. It is
+// synthetic: it exists so the checker's output can be shown without any
+// client source.
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  ATTENDANCE_ONLY
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+}
+
+model School {
+  id        String   @id @default(cuid())
+  name      String
+  settings  Json?
+  users     User[]
+  students  Student[]
+  createdAt DateTime @default(now())
+}
+
+model User {
+  id           String  @id @default(cuid())
+  email        String  @unique
+  passwordHash String
+  role         Role
+  schoolId     String
+  school       School  @relation(fields: [schoolId], references: [id])
+  isActive     Boolean @default(true)
+}
+
+model Student {
+  id            String   @id @default(cuid())
+  studentNumber String   @unique
+  name          String
+  grade         String
+  className     String
+  guardianName  String?
+  guardianPhone String
+  consentAt     DateTime?
+  schoolId      String
+  school        School   @relation(fields: [schoolId], references: [id])
+  attendance    Attendance[]
+}
+
+model Attendance {
+  id        String           @id @default(cuid())
+  date      DateTime
+  status    AttendanceStatus
+  draft     Boolean          @default(true)
+  studentId String
+  student   Student          @relation(fields: [studentId], references: [id])
+  recordedById String
+}
+
+model Notification {
+  id         String  @id @default(cuid())
+  wamid      String?
+  status     String
+  payload    Json
+  studentId  String
+  guardianPhone String
+  attempts   Int     @default(0)
+}
